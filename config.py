@@ -1,0 +1,9 @@
+ENV='development'
+FLASK_DEBUG=1
+DEBUG=True
+SECRET_KEY='HitachiSecretKey'
+MAIL_SERVER='smtp.gmail.com'
+MAIL_PORT=465
+MAIL_USE_SSL=True
+MAIL_USERNAME = 'otp.mozo@gmail.com'
+MAIL_PASSWORD = 'Qwikbatteries@123'
