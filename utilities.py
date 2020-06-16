@@ -237,6 +237,7 @@ def save_new_user(reqData):
     data['religion'] = ''
     data['pets'] = ''
     data['what_kind_of_person'] = []
+    data['teleport_data'] = []
     data['instagram'] = False
     data['linked_in'] = False
     data['spotify'] = False
@@ -262,6 +263,7 @@ def save_new_user(reqData):
     data['credits'] = mozo_features
     data['settings'] = mozo_settings
     data['filter'] = mozo_filters
+    data['is_login'] = True
     result = MONGO_OPERATION(mongoClient).add_new_user(data)
     return result
 
@@ -274,12 +276,14 @@ def get_otp(reqData, isFacebookLogin):
                 update_data = {}
                 update_data['last_otp_sent_time'] = get_iso_format_datetime()
                 update_data['isEmailVerified'] = True
+                update_data['is_login'] = True
                 result = MONGO_OPERATION(mongoClient).update_user_data_in_mongo('email', reqData['email'], update_data)
             else:
                 reqData['otp'] = ""
                 token = get_token(reqData['email'])
                 reqData['access_token'] = token
                 reqData['isEmailVerified'] = True
+                reqData['is_login'] = True
                 result = save_new_user(reqData)
             user_data_result = MONGO_OPERATION(mongoClient).check_user_exists_from_mongo('email', reqData['email'])
             user_data_result['_id'] = str(user_data_result['_id'])
@@ -302,6 +306,7 @@ def get_otp(reqData, isFacebookLogin):
                 if user_exists_result:
                     update_data = {}
                     update_data['otp'] = otp
+                    update_data['is_login'] = True
                     update_data['last_otp_sent_time'] = get_iso_format_datetime()
                     result = MONGO_OPERATION(mongoClient).update_user_data_in_mongo('mobile', reqData['mobile'], update_data)
                     return result
@@ -313,6 +318,18 @@ def get_otp(reqData, isFacebookLogin):
                 return False
     except Exception as e:
         print("error from catch ", e)
+        return False
+
+def logout(reqDaata):
+    try:
+        if reqData['user_id']:
+            MONGO_OPERATION(mongoClient).update_user_data_in_mongo('_id', reqData['user_id'], {'is_login': False})
+            return True
+        else:
+            return False
+
+    except Exception as e:
+        print(e)
         return False
 
 def verify_otp(reqData):
@@ -862,6 +879,40 @@ def update_message(reqData):
             'reason': reqData['reason'] if 'reason' in reqData else '',
             'status': reqData['status'] if 'status' in reqData else 4
         }
+        if 'status' in reqData and reqData['status'] == 0:
+            # like
+            message = MONGO_OPERATION(mongoClient).get_message(reqData['message_id'])
+            if message:
+                interest_data = {
+                    'fromUser': message['fromUser'],
+                    'toUser': message['toUser'],
+                    'interestType': 'like', # like, super_like,
+                    'status': 6, # 0 - requested, 1- request expired, 2 - responded, 3-4-5 are timer updates, 6- got message
+                    'isAccept': True,
+                    'respondType': 'like',
+                    'reason': '',
+                    'interestAcceptTime': get_iso_format_datetime(),
+                    'interestTime': get_iso_format_datetime()
+                }
+                result1 = MONGO_OPERATION(mongoClient).add_new_interest(interest_data)
+        
+        if 'status' in reqData and reqData['status'] == 5:
+            #reject
+            message = MONGO_OPERATION(mongoClient).get_message(reqData['message_id'])
+            if message:
+                interest_data = {
+                    'fromUser': message['fromUser'],
+                    'toUser': message['toUser'],
+                    'interestType': 'like', # like, super_like,
+                    'status': 1, # 0 - requested, 1- request expired, 2 - responded, 3-4-5 are timer updates, 6- got message
+                    'isAccept': False,
+                    'respondType': '',
+                    'reason': '',
+                    'interestAcceptTime': '',
+                    'interestTime': get_iso_format_datetime()
+                }
+                result1 = MONGO_OPERATION(mongoClient).add_new_interest(interest_data)
+
         print(update_data)
         result = MONGO_OPERATION(mongoClient).update_message('_id', reqData['message_id'], update_data)
         if result:

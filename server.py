@@ -176,6 +176,23 @@ def get_otp_request():
         print(e)
         return jsonify(codes(400, 'bad request')), 400
 
+@app.route('/api/v1/logout', methods=['POST'])
+def logout_request():
+    try:
+        req = request.get_json()
+        if req:
+            result = logout(req)
+            if result:
+                response = jsonify(codes(200, 'Success')), 200
+                return response
+            else:
+                return jsonify(codes(406, 'problem in logout')), 406
+        else:
+            return jsonify(codes(400, 'bad request')), 400
+    except Exception as e:
+        print(e)
+        return jsonify(codes(400, 'bad request')), 400
+
 @app.route('/api/v1/verify-otp', methods=['POST'])
 def verify_otp_request():
     try:

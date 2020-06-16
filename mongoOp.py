@@ -211,12 +211,36 @@ class MONGO_OPERATION():
             print(e)
             return False
 
+    def checkInterestedIn(self, interestType, userDetails, data):
+        print(interestType, userDetails['gender'], data['gender'], data['sexual_orientation'])
+        isValidUser = True
+        if interestType == 'Man' and data['gender'] == 'Male':
+            isValidUser = True
+        elif interestType == 'Woman' and data['gender'] == 'Female':
+            isValidUser = True
+        elif interestType == 'Bisexual' and userDetails['gender'] == 'Male' and data['sexual_orientation'] in ['Bisexual', 'Gay']:
+            isValidUser = True
+        elif interestType == 'Bisexual' and userDetails['gender'] == 'Female' and data['sexual_orientation'] in ['Bisexual', 'Lesbian']:
+            isValidUser = True
+        elif interestType == 'Gay' and data['sexual_orientation'] in ['Gay', 'Bisexual']:
+            isValidUser = True
+        elif interestType == 'Lesbian' and data['sexual_orientation'] in ['Lesbian', 'Bisexual']:
+            isValidUser = True
+        elif interestType == 'Transgender' and data['sexual_orientation'] in ['Transgender', 'Bisexual']:
+            isValidUser = True
+        elif interestType == 'Others' and data['sexual_orientation'] in ['Others']:
+            isValidUser = True
+        else:
+            isValidUser = False
+        return isValidUser
     def get_users_on_localtion_from_mongo(self, userDetails):
         try:
             print("datetime")
             print(date.today())
             earthRadius = 6371.0
             maxDistance = userDetails['distance'] if userDetails['distance'] else 50.0
+            print("maxDistance")
+            print(maxDistance)
             max_distance_radians = maxDistance / earthRadius
             output = []
             collection = self.client.users
@@ -233,11 +257,23 @@ class MONGO_OPERATION():
             for data in collection.find(query):
                 if user_id == data['_id']:
                     continue
-                if (userDetails['interested_in'] == 'Male' and (data['gender'] == 'Man' or data['gender'] == 'Other')) or (userDetails['interested_in'] == 'Female' and (data['gender'] == 'Female' or data['gender'] == 'Other')) or (userDetails['interested_in'] == 'Other' and (data['gender'] == 'Man' or data['gender'] == 'Female')):
-                    continue;
+
+                # if (userDetails['interested_in'] == 'Male' and (data['gender'] == 'Man' or data['gender'] == 'Other')) or (userDetails['interested_in'] == 'Female' and (data['gender'] == 'Female' or data['gender'] == 'Other')) or (userDetails['interested_in'] == 'Other' and (data['gender'] == 'Man' or data['gender'] == 'Female')):
+                #     continue;
                 isValidUser = True
-                if 'filter' in userDetails:
-                    print(userDetails['filter'])
+                interested_in = userDetails['filter']['interested_in'] if len(userDetails['filter']['interested_in']) else userDetails['interested_in']
+                # print("interested_in")
+                # print(interested_in)
+                if isinstance(interested_in, list):
+                    # print("abc")
+                    for interestType in interested_in:
+                        isValidUser = self.checkInterestedIn(interestType, userDetails, data)
+                else:
+                    isValidUser = self.checkInterestedIn(interested_in, userDetails, data)
+
+                print("is interested_in", isValidUser)
+                if 'filter' in userDetails and isValidUser:
+                    # print(userDetails['filter'])
                     for filterData in userDetails['filter']:
                         # if filterData in userDetails['filter'] and 'filter' in data and filterData in data['filter'] and userDetails['filter'][filterData] != "" and userDetails[filterData] in data['filter'][filterData]:
                         # print(filterData)
@@ -258,20 +294,21 @@ class MONGO_OPERATION():
                         #     else:
                         #         isValidUser = False
                         # print(len(userDetails['filter'][filterData]))
-                        if userDetails['filter'][filterData] != "" and len(userDetails['filter'][filterData]) != 0: 
-                            # print(userDetails['filter'][filterData], " ---")
-                            if filterData in data['settings']:
-                                # print(filterData, "---", userDetails['filter'][filterData])
-                                # print(data['settings'][filterData])
-                                # print("***")
-                                if isinstance(userDetails['filter'][filterData], list) and (data['settings'][filterData] not in userDetails['filter'][filterData]):
-                                    # print("here")
-                                    isValidUser = False
-                                else:
-                                    if userDetails['filter'][filterData] != data['settings'][filterData]:
+                        if filterData != 'interested_in' and filterData != 'sexual_orientation':
+                            if userDetails['filter'][filterData] != "" and len(userDetails['filter'][filterData]) != 0: 
+                                # print(userDetails['filter'][filterData], " ---")
+                                if filterData in data['settings']:
+                                    # print(filterData, "---", userDetails['filter'][filterData])
+                                    # print(data['settings'][filterData])
+                                    # print("***")
+                                    if isinstance(userDetails['filter'][filterData], list) and (data['settings'][filterData] not in userDetails['filter'][filterData]):
+                                        # print("here")
                                         isValidUser = False
-                            else:
-                                isValidUser = False
+                                    else:
+                                        if userDetails['filter'][filterData] != data['settings'][filterData]:
+                                            isValidUser = False
+                                else:
+                                    isValidUser = False
                     is_interest_exist = self.check_interest_exist(str(user_id), str(data['_id']))
                     if(is_interest_exist and len(is_interest_exist) > 0):
                         isValidUser = False
@@ -455,6 +492,16 @@ class MONGO_OPERATION():
                 data['_id'] = str(data['_id'])
                 output.append(data)
             return output
+        except Exception as e:
+            print(e)
+            return False
+
+    def get_message(self, message_id):
+        try:
+            collection = self.client.user_messages
+            where_value = ObjectId(message_id)
+            message = collection.find_one({"_id": where_value})
+            return message
         except Exception as e:
             print(e)
             return False
