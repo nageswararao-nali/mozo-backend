@@ -154,6 +154,7 @@ class MONGO_OPERATION():
             collection = self.client.user_interests
             output = []
             query = {'fromUser': fromUser, 'toUser': toUser }
+            print("interest query")
             print(query)
             for data in collection.find(query):
                 output.append(data)
@@ -255,7 +256,7 @@ class MONGO_OPERATION():
             }
             print(query)
             for data in collection.find(query):
-                if user_id == data['_id']:
+                if str(user_id) == str(data['_id']):
                     continue
 
                 # if (userDetails['interested_in'] == 'Male' and (data['gender'] == 'Man' or data['gender'] == 'Other')) or (userDetails['interested_in'] == 'Female' and (data['gender'] == 'Female' or data['gender'] == 'Other')) or (userDetails['interested_in'] == 'Other' and (data['gender'] == 'Man' or data['gender'] == 'Female')):
@@ -320,6 +321,7 @@ class MONGO_OPERATION():
                     if isValidUser == False:
                         continue
                     else:
+                        print()
                         R = 6373.0
 
                         lat1 = radians(userDetails['lat_long'][1])
@@ -347,7 +349,9 @@ class MONGO_OPERATION():
                             data['isCrush'] = True
                         else:
                             data['isCrush'] = False
-                        
+                
+                if isValidUser == False:
+                    continue      
                 data['_id'] = str(data['_id'])
                 output.append(data)
             # print(output)

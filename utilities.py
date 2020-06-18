@@ -36,8 +36,8 @@ sms_api_key = 'nn4K6NVEx060H6Wmqk8QBw'
 sms_sender_id = 'MOZODT'
 mozo_features = {
       "addFilters": False,
-      "buzzCount": 0,
-      "crushCount": 0,
+      "buzzCount": 3,
+      "crushCount": 5,
       "hideAge": False,
       "hideDistance": False,
       "imageSharing": 0,

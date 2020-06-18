@@ -127,7 +127,7 @@ def get_users_request():
         user_id = request.args.get("user_id")
         if user_id:
             result = get_users(user_id)
-            print(result)
+            # print(result)
             if result or result == []:
                 response = jsonify(codes(200, result)), 200
                 return response
