@@ -82,7 +82,6 @@ mozo_filters = {
 }
 
 
-# mongoClient = CONNECTION_MONGODB().mongo_client_1()
 # mongoClient = CONNECTION_MONGODB().mongo_local_to_server_client()
 mongoClient = CONNECTION_MONGODB().mongo_local_client()
 s3Client = CONNECTION_S3().s3_client()
@@ -166,15 +165,20 @@ def get_all_users():
         return False
 def get_users(user_id):
     try:
+        usersData = {}
         user_exists_result = MONGO_OPERATION(mongoClient).check_user_exists_from_mongo('_id', user_id)
+        user_exists_result['_id'] = str(user_exists_result['_id'])
+        usersData['loggedUserData'] = user_exists_result
         if user_exists_result:
             # print(user_exists_result)
             result = MONGO_OPERATION(mongoClient).get_users_on_localtion_from_mongo(user_exists_result)
             if result:
-                return result
+                usersData['usersList'] = result
+                return usersData
             print("result")
             print(result)
-            return result
+            usersData['usersList'] = []
+            return usersData
         else:
             return False
     except Exception as e:
@@ -254,7 +258,7 @@ def save_new_user(reqData):
     data['online'] = True
     data['is_subscribe'] = False
     data['isPhotoVerified'] = False
-    data['isEmailVerified'] = False if 'email' in reqData else True
+    data['isEmailVerified'] = False
     data['status'] = 1
     data['subscription_id'] = ''
     data['email'] = reqData['email'] if 'email' in reqData else ''
@@ -289,17 +293,19 @@ def get_otp(reqData, isFacebookLogin):
             user_data_result['_id'] = str(user_data_result['_id'])
             return user_data_result
         else:
-            otp = generateOTP()
             # sms_url = 'http://sms.pearlsms.com/public/sms/send?sender=PLRSMS&smstype=TRANS&numbers=%s&apikey=%s&message=Your verification code is %s.' % (str(reqData['mobile']), sms_api_key, str(otp))
-            mobile = '91'+str(reqData['mobile'])
-            sms_url = 'http://cloud.smshostindia.in/api/mt/SendSMS?APIKey=%s&senderid=%s&channel=Trans&DCS=0&flashsms=0&number=%s&text=Your verification code is %s.&route=1' %(sms_api_key, sms_sender_id, mobile, str(otp))
-            print(sms_url)
-            response = requests.get(sms_url)
-            print(response)
-            print("response")
-            sms_res = response.json()
-            # otp = reqData['mobile'][-6:]
-            # sms_res = {'status': 'SUCCESS'}
+            
+            # otp = generateOTP()
+            # mobile = '91'+str(reqData['mobile'])
+            # sms_url = 'http://cloud.smshostindia.in/api/mt/SendSMS?APIKey=%s&senderid=%s&channel=Trans&DCS=0&flashsms=0&number=%s&text=Your verification code is %s.&route=1' %(sms_api_key, sms_sender_id, mobile, str(otp))
+            # print(sms_url)
+            # response = requests.get(sms_url)
+            # print(response)
+            # print("response")
+            # sms_res = response.json()
+
+            otp = reqData['mobile'][-6:]
+            sms_res = {'ErrorMessage': 'Done'}
             print(sms_res)
             if 'ErrorMessage' in sms_res and sms_res['ErrorMessage'] == 'Done':
                 user_exists_result = MONGO_OPERATION(mongoClient).check_user_exists_from_mongo('mobile', reqData['mobile'])
